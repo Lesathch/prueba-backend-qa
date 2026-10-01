@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: franchises-api
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+      accept-float-as-int: false
+server:
+  port: ${PORT:8080}
+  shutdown: graceful
+inventory:
+  dynamodb:
+    region: ${AWS_REGION:us-east-1}
+    table: ${DYNAMODB_TABLE:franchises}
+    endpoint: ${DYNAMODB_ENDPOINT:}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,dynamodb
+  info:
+    env:
+      enabled: true
+info:
+  app:
+    name: Franchises API
+    version: 1.0.0

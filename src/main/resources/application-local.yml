@@ -1,0 +1,3 @@
+inventory:
+  dynamodb:
+    endpoint: ${DYNAMODB_ENDPOINT:http://localhost:8000}

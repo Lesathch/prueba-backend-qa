@@ -1,0 +1,15 @@
+target/
+.tools/
+.local/
+.idea/
+.vscode/
+*.iml
+*.log
+.env
+.env.*
+!.env.example
+infra/.terraform/
+infra/*.tfstate*
+infra/*.tfvars
+!infra/terraform.tfvars.example
+crash.log
