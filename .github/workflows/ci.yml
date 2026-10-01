@@ -1,0 +1,55 @@
+name: Verify
+on:
+  push:
+    branches: [main, "codex/**"]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  java:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - run: chmod +x mvnw && ./mvnw -B -ntp verify -Pintegration
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+            target/site/jacoco/
+      - run: docker compose config --quiet
+      - run: docker build -t franchises-api:ci .
+      - name: Verify Compose startup
+        run: |
+          docker compose up -d --build
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/actuator/health/readiness; then
+              curl --fail --silent -H 'Content-Type: application/json' -d '{"name":"CI smoke"}' http://127.0.0.1:8080/api/v1/franchises
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs
+          exit 1
+      - run: docker compose down -v
+        if: always()
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.5
+      - run: terraform fmt -check
+      - run: terraform init -backend=false
+      - run: terraform validate

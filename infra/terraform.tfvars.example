@@ -1,0 +1,4 @@
+region  = "us-east-1"
+project = "franchises-api"
+# Set after building and pushing the image to the provisioned ECR repository:
+# image_identifier = "123456789012.dkr.ecr.us-east-1.amazonaws.com/franchises-api:1.0.0"

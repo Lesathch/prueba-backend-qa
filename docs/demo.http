@@ -1,0 +1,63 @@
+### Compatible con REST Client de VS Code / HTTP Client de IntelliJ.
+### Sustituye los UUID después de cada creación.
+@base = http://localhost:8080/api/v1/franchises
+@franchise = REEMPLAZAR_UUID
+@branch = REEMPLAZAR_UUID
+@product = REEMPLAZAR_UUID
+
+### 1. Crear franquicia (copiar id)
+POST {{base}}
+Content-Type: application/json
+
+{"name":"Café Andino"}
+
+### 2. Crear sucursal (copiar id)
+POST {{base}}/{{franchise}}/branches
+Content-Type: application/json
+
+{"name":"Chapinero"}
+
+### 3. Crear producto (copiar id)
+POST {{base}}/{{franchise}}/branches/{{branch}}/products
+Content-Type: application/json
+
+{"name":"Café de origen","stock":15}
+
+### 4. Consultar versión actual
+GET {{base}}/{{franchise}}/branches/{{branch}}/products/{{product}}
+
+### 5. Stock (version debe coincidir con el GET anterior)
+PATCH {{base}}/{{franchise}}/branches/{{branch}}/products/{{product}}/stock
+Content-Type: application/json
+
+{"stock":80,"version":0}
+
+### 6. Ganador por sucursal
+GET {{base}}/{{franchise}}/products/max-stock
+
+### 7. Renombrar franquicia
+PATCH {{base}}/{{franchise}}/name
+Content-Type: application/json
+
+{"name":"Café Andino Colombia","version":0}
+
+### 8. Renombrar sucursal
+PATCH {{base}}/{{franchise}}/branches/{{branch}}/name
+Content-Type: application/json
+
+{"name":"Chapinero Norte","version":0}
+
+### 9. Renombrar producto (stock ya incrementó la versión a 1)
+PATCH {{base}}/{{franchise}}/branches/{{branch}}/products/{{product}}/name
+Content-Type: application/json
+
+{"name":"Café especial","version":1}
+
+### 10. Eliminar producto
+DELETE {{base}}/{{franchise}}/branches/{{branch}}/products/{{product}}
+
+### 11. Salud y documentación
+GET http://localhost:8080/actuator/health/readiness
+
+### Contrato OpenAPI
+GET http://localhost:8080/openapi.json
