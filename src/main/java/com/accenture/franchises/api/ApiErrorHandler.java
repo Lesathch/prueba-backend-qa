@@ -7,6 +7,7 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ServerWebInputException;
+import org.springframework.web.server.ResponseStatusException;
 import software.amazon.awssdk.core.exception.SdkException;
 import reactor.core.Exceptions;
 
@@ -32,6 +33,12 @@ public class ApiErrorHandler {
     @ExceptionHandler(ServerWebInputException.class)
     ProblemDetail malformed(ServerWebInputException error) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Verifica el JSON y los identificadores UUID.");
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    ProblemDetail http(ResponseStatusException error) {
+        return ProblemDetail.forStatusAndDetail(error.getStatusCode(),
+                "La solicitud no es compatible con este endpoint.");
     }
 
     @ExceptionHandler(Exception.class)

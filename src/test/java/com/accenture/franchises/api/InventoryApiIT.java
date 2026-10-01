@@ -33,7 +33,7 @@ class InventoryApiIT {
     static void configure(DynamicPropertyRegistry registry) {
         String endpoint = System.getProperty("dynamodb.test.endpoint", "");
         if (endpoint.isBlank()) {
-            container = new GenericContainer<>(DockerImageName.parse("amazon/dynamodb-local:3.3.0"))
+            container = new GenericContainer<>(DockerImageName.parse("amazon/dynamodb-local:3.3.1"))
                     .withExposedPorts(8000).withCommand("-jar", "DynamoDBLocal.jar", "-inMemory", "-sharedDb");
             container.start();
             endpoint = "http://" + container.getHost() + ":" + container.getMappedPort(8000);
@@ -174,7 +174,7 @@ class InventoryApiIT {
         var p = product(branch(franchise()));
         var writes = List.of(31, 32).stream().map(stock -> CompletableFuture.supplyAsync(() ->
                 api.patch().uri(p + "/stock").bodyValue(Map.of("stock", stock, "version", 0)).exchange()
-                        .returnResult(Void.class).getStatus().value())).toList();
+                        .expectBody().returnResult().getStatus().value())).toList();
         assertThat(writes.stream().map(CompletableFuture::join).toList()).containsExactlyInAnyOrder(200, 409);
         api.get().uri(p).exchange().expectStatus().isOk().expectBody().jsonPath("$.version").isEqualTo(1);
     }
@@ -235,5 +235,26 @@ class InventoryApiIT {
         api.get().uri(root(f) + "/branches").exchange().expectStatus().isOk().expectBody().jsonPath("$.length()").isEqualTo(1);
         api.get().uri(b + "/products").exchange().expectStatus().isOk().expectBody().jsonPath("$.length()").isEqualTo(1);
         api.get().uri("/actuator/health/readiness").exchange().expectStatus().isOk().expectBody().jsonPath("$.status").isEqualTo("UP");
+    }
+
+    @Test
+    void servesOfflineDocumentationAndMachineReadableContract() {
+        api.get().uri("/docs.html").exchange().expectStatus().isOk();
+        api.get().uri("/webjars/swagger-ui/5.29.5/swagger-ui-bundle.js").exchange().expectStatus().isOk();
+        api.get().uri("/webjars/swagger-ui/5.29.5/swagger-ui.css").exchange().expectStatus().isOk();
+        api.get().uri("/openapi.json").exchange().expectStatus().isOk().expectBody()
+                .jsonPath("$.openapi").isEqualTo("3.1.0")
+                .jsonPath("$.paths['/api/v1/franchises/{franchise}/products/max-stock'].get.operationId")
+                .isEqualTo("maxStock");
+    }
+
+    @Test
+    void preservesHttpErrorsForUnsupportedMethodsAndContentTypes() {
+        api.put().uri("/api/v1/franchises").bodyValue(Map.of("name", "Wrong method"))
+                .exchange().expectStatus().isEqualTo(405);
+        api.post().uri("/api/v1/franchises").header("Content-Type", "text/plain").bodyValue("wrong body")
+                .exchange().expectStatus().isEqualTo(415);
+        api.post().uri("/api/v1/franchises").header("Content-Type", "application/json")
+                .exchange().expectStatus().isBadRequest();
     }
 }

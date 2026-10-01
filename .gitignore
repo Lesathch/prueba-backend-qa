@@ -13,3 +13,4 @@ infra/*.tfstate*
 infra/*.tfvars
 !infra/terraform.tfvars.example
 crash.log
+infra/plan
